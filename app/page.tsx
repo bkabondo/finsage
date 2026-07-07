@@ -20,7 +20,7 @@ export default function Home() {
                 Sign In
               </Button>
             </Link>
-            <Link href="/signup">
+            <Link href="/dashboard">
               <Button className="bg-blue-500 hover:bg-blue-600 text-white">
                 Get Started
               </Button>
@@ -45,9 +45,9 @@ export default function Home() {
           FinSage combines smart expense tracking with AI-powered insights to help you build better money habits and reach your financial goals faster.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link href="/signup">
+          <Link href="/dashboard">
             <Button size="lg" className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-6 text-lg">
-              Start for Free <ArrowRight className="ml-2 h-5 w-5" />
+              Demo <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
           <Link href="/login">
@@ -135,11 +135,11 @@ export default function Home() {
             <Shield className="h-12 w-12 text-blue-400 mx-auto mb-4" />
             <h2 className="text-3xl font-bold mb-4">Start your financial journey today</h2>
             <p className="text-slate-300 mb-8 max-w-xl mx-auto">
-              Join thousands of users who use FinSage to understand their spending, stick to budgets, and make smarter financial decisions.
+              Track your spending, set budgets, and get Claude AI-powered insights — all in one clean dashboard.
             </p>
-            <Link href="/signup">
+            <Link href="/dashboard">
               <Button size="lg" className="bg-blue-500 hover:bg-blue-600 text-white px-10 py-6 text-lg">
-                Create Free Account <ArrowRight className="ml-2 h-5 w-5" />
+                Demo It Free <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
           </div>

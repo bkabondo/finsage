@@ -41,11 +41,23 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
+const DEMO_TRANSACTIONS: Transaction[] = [
+  { id: "d1", type: "income", amount: 3500, category: "Salary", description: "Monthly salary", transaction_date: "2026-06-01", created_at: "2026-06-01T00:00:00Z" },
+  { id: "d2", type: "income", amount: 450, category: "Freelance", description: "Design project", transaction_date: "2026-06-05", created_at: "2026-06-05T00:00:00Z" },
+  { id: "d3", type: "expense", amount: 1200, category: "Rent", description: "Monthly rent", transaction_date: "2026-06-01", created_at: "2026-06-01T00:00:00Z" },
+  { id: "d4", type: "expense", amount: 280, category: "Food", description: "Groceries", transaction_date: "2026-06-08", created_at: "2026-06-08T00:00:00Z" },
+  { id: "d5", type: "expense", amount: 95, category: "Utilities", description: "Internet + electric", transaction_date: "2026-06-10", created_at: "2026-06-10T00:00:00Z" },
+  { id: "d6", type: "expense", amount: 60, category: "Entertainment", description: "Streaming services", transaction_date: "2026-06-12", created_at: "2026-06-12T00:00:00Z" },
+  { id: "d7", type: "expense", amount: 180, category: "Food", description: "Restaurants", transaction_date: "2026-06-14", created_at: "2026-06-14T00:00:00Z" },
+  { id: "d8", type: "expense", amount: 120, category: "Transport", description: "Gas + Uber", transaction_date: "2026-06-15", created_at: "2026-06-15T00:00:00Z" },
+];
+
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
 
   // Filters
   const [filterCategory, setFilterCategory] = useState("");
@@ -80,18 +92,22 @@ export default function TransactionsPage() {
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) {
-        supabase
-          .from("finsage_users")
-          .select("role")
-          .eq("id", data.user.id)
-          .single()
-          .then(({ data: profile }) => {
-            setIsAdmin(profile?.role === "admin");
-          });
+      if (!data.user) {
+        setIsGuest(true);
+        setTransactions(DEMO_TRANSACTIONS);
+        setLoading(false);
+        return;
       }
+      supabase
+        .from("finsage_users")
+        .select("role")
+        .eq("id", data.user.id)
+        .single()
+        .then(({ data: profile }) => {
+          setIsAdmin(profile?.role === "admin");
+        });
+      fetchTransactions();
     });
-    fetchTransactions();
   }, [fetchTransactions]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -144,13 +160,15 @@ export default function TransactionsPage() {
             <h1 className="text-3xl font-bold">Transactions</h1>
             <p className="text-slate-400 mt-1">Track all your income and expenses</p>
           </div>
-          <Button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Transaction
-          </Button>
+          {!isGuest && (
+            <Button
+              onClick={() => setShowForm(!showForm)}
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Transaction
+            </Button>
+          )}
         </div>
 
         {/* Add Transaction Form */}
@@ -359,12 +377,14 @@ export default function TransactionsPage() {
                       {txn.type === "income" ? "+" : "-"}
                       {formatCurrency(Number(txn.amount))}
                     </span>
-                    <button
-                      onClick={() => handleDelete(txn.id)}
-                      className="text-slate-600 hover:text-red-400 transition-colors p-1"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {!isGuest && (
+                      <button
+                        onClick={() => handleDelete(txn.id)}
+                        className="text-slate-600 hover:text-red-400 transition-colors p-1"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

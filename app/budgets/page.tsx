@@ -47,12 +47,28 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
+const DEMO_BUDGETS: Budget[] = [
+  { id: "db1", category: "Food", monthly_limit: 500, month: 6, year: 2026 },
+  { id: "db2", category: "Transport", monthly_limit: 200, month: 6, year: 2026 },
+  { id: "db3", category: "Entertainment", monthly_limit: 100, month: 6, year: 2026 },
+  { id: "db4", category: "Utilities", monthly_limit: 150, month: 6, year: 2026 },
+];
+
+const DEMO_BUDGET_TRANSACTIONS: Transaction[] = [
+  { id: "d4", amount: 280, type: "expense", category: "Food", transaction_date: "2026-06-08" },
+  { id: "d7", amount: 180, type: "expense", category: "Food", transaction_date: "2026-06-14" },
+  { id: "d5", amount: 95, type: "expense", category: "Utilities", transaction_date: "2026-06-10" },
+  { id: "d6", amount: 60, type: "expense", category: "Entertainment", transaction_date: "2026-06-12" },
+  { id: "d8", amount: 120, type: "expense", category: "Transport", transaction_date: "2026-06-15" },
+];
+
 export default function BudgetsPage() {
   const [budgets, setBudgets] = useState<Budget[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
   const [userId, setUserId] = useState<string>("");
 
   // Form state
@@ -68,7 +84,13 @@ export default function BudgetsPage() {
     async function load() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setIsGuest(true);
+        setBudgets(DEMO_BUDGETS);
+        setTransactions(DEMO_BUDGET_TRANSACTIONS);
+        setLoading(false);
+        return;
+      }
       setUserId(user.id);
 
       const { data: profile } = await supabase
@@ -176,13 +198,15 @@ export default function BudgetsPage() {
               {now.toLocaleString("default", { month: "long", year: "numeric" })} budget management
             </p>
           </div>
-          <Button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Set Budget
-          </Button>
+          {!isGuest && (
+            <Button
+              onClick={() => setShowForm(!showForm)}
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Set Budget
+            </Button>
+          )}
         </div>
 
         {/* Summary Card */}
