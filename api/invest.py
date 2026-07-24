@@ -1,14 +1,71 @@
 """FinSage invest endpoint (Python). Replaces app/api/invest/route.ts."""
+import base64
 import json
 import os
 import re
+import urllib.request
+import urllib.parse
+import urllib.error
+from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler
 
 import anthropic
 
-from _supa import user_from_request, http
-
 MODEL = "claude-sonnet-4-6"
+SUPABASE_URL = os.environ.get("NEXT_PUBLIC_SUPABASE_URL", "").rstrip("/")
+ANON = os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY", "")
+COOKIE_BASE = f"sb-{SUPABASE_URL.replace('https://', '').split('.')[0]}-auth-token"
+
+
+def http(method, url, headers=None, body=None, timeout=25):
+    req = urllib.request.Request(url, data=(body.encode() if isinstance(body, str) else body), method=method)
+    for k, v in (headers or {}).items():
+        req.add_header(k, v)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.status, r.read().decode("utf-8", "ignore")
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode("utf-8", "ignore")
+
+
+def _tok(cookie_header):
+    if not cookie_header:
+        return None
+    jar = SimpleCookie()
+    try:
+        jar.load(cookie_header)
+    except Exception:
+        return None
+    parts = []
+    if COOKIE_BASE in jar:
+        parts.append((-1, jar[COOKIE_BASE].value))
+    i = 0
+    while f"{COOKIE_BASE}.{i}" in jar:
+        parts.append((i, jar[f"{COOKIE_BASE}.{i}"].value))
+        i += 1
+    if not parts:
+        return None
+    parts.sort(key=lambda p: p[0])
+    raw = urllib.parse.unquote("".join(p[1] for p in parts))
+    if raw.startswith("base64-"):
+        raw = raw[len("base64-"):]
+    try:
+        return json.loads(base64.urlsafe_b64decode(raw + "=" * (-len(raw) % 4)).decode("utf-8", "ignore")).get("access_token")
+    except Exception:
+        return None
+
+
+def user_from_request(headers):
+    tok = _tok(headers.get("cookie"))
+    if not tok:
+        return None, None
+    s, t = http("GET", f"{SUPABASE_URL}/auth/v1/user", {"apikey": ANON, "Authorization": f"Bearer {tok}"})
+    if s != 200:
+        return None, None
+    try:
+        return json.loads(t), tok
+    except Exception:
+        return None, None
 TICKERS = ["SPY", "QQQ", "SCHD", "VTI", "AAPL", "MSFT", "GOOGL", "NVDA", "JPM", "BRK-B"]
 
 
